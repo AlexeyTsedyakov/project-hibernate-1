@@ -4,8 +4,6 @@ import com.game.entity.Player;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
-import org.hibernate.annotations.NamedQueries;
-import org.hibernate.annotations.NamedQuery;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.query.NativeQuery;
 import org.hibernate.query.Query;
@@ -14,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
 
 @Repository(value = "db")
 public class PlayerRepositoryDB implements IPlayerRepository {
@@ -30,7 +27,7 @@ public class PlayerRepositoryDB implements IPlayerRepository {
     public List<Player> getAll(int pageNumber, int pageSize) {
         try (Session session = sessionFactory.openSession()) {
             NativeQuery<Player> nativeQuery = session.createNativeQuery("select * from player", Player.class);
-            nativeQuery.setFirstResult((pageNumber - 1) * pageSize);
+            nativeQuery.setFirstResult(pageNumber * pageSize);
             nativeQuery.setMaxResults(pageSize);
             return nativeQuery.getResultList();
         }
@@ -39,8 +36,8 @@ public class PlayerRepositoryDB implements IPlayerRepository {
     @Override
     public int getAllCount() {
         try (Session session = sessionFactory.openSession()) {
-            Query<Integer> query = session.createNamedQuery("getAllCount", Integer.class);
-            return query.uniqueResult();
+            Query<Long> query = session.createNamedQuery("getAllCount", Long.class);
+            return Math.toIntExact(query.uniqueResult());
         }
     }
 
@@ -48,7 +45,7 @@ public class PlayerRepositoryDB implements IPlayerRepository {
     public Player save(Player player) {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
-            session.persist(player);
+            session.save(player);
             transaction.commit();
             return player;
         }
@@ -58,7 +55,7 @@ public class PlayerRepositoryDB implements IPlayerRepository {
     public Player update(Player player) {
         try (Session session = sessionFactory.openSession()) {
             Transaction transaction = session.beginTransaction();
-            player = (Player) session.merge(player);
+            session.update(player);
             transaction.commit();
             return player;
         }
@@ -67,7 +64,7 @@ public class PlayerRepositoryDB implements IPlayerRepository {
     @Override
     public Optional<Player> findById(long id) {
         try (Session session = sessionFactory.openSession()) {
-            return Optional.ofNullable(session.find(Player.class, id));
+            return Optional.ofNullable(session.get(Player.class, id));
         }
     }
 
